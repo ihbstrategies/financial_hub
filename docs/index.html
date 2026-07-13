@@ -406,7 +406,11 @@ tr.row-total td { background: var(--blue-100); font-weight: 700; color: var(--bl
     if(canNet())return getJSON(api,f).then(function(d){if(d&&!d.error){cset(ckey(api,f),d);}return (d&&d.error)?{status:'erro',mensagem:d.error}:d;}).catch(function(){return cget(ckey(api,f),{status:'erro',mensagem:'offline sem cache'});});
     return Promise.resolve(cget(ckey(api,f),{status:'erro',mensagem:'offline — sem dados em cache ainda'}));
   };});
-  WRITES.forEach(function(fn){RUN[fn]=function(data){
+  WRITES.forEach(function(fn){RUN[fn]=function(){
+    // atualizarFaturamento(id,dados)/atualizarLancamento(id,dados) chegam com 2 args:
+    // empacota {id,dados} (o WebApi desempacota); demais writes usam o 1º arg direto.
+    var a=arguments;
+    var data=(a.length>1)?{id:a[0],dados:a[1]}:a[0];
     if(canNet())return postJSON(fn,data).then(function(res){flush();return res;}).catch(function(){queue(fn,data);return {status:'sucesso',mensagem:'salvo offline — sincroniza ao reconectar'};});
     queue(fn,data);return Promise.resolve({status:'sucesso',mensagem:'salvo offline — sincroniza ao reconectar'});
   };});
@@ -443,7 +447,7 @@ tr.row-total td { background: var(--blue-100); font-weight: 700; color: var(--bl
       <div class="sidebar-footer">
         <div class="nome">Financial Hub</div>
         <div></div>
-        <div style="opacity:.55;font-size:.78em;margin-top:4px">build 2026-07-13.a</div>
+        <div style="opacity:.55;font-size:.78em;margin-top:4px">build 2026-07-13.b</div>
       </div>
     </aside>
 
@@ -459,12 +463,21 @@ tr.row-total td { background: var(--blue-100); font-weight: 700; color: var(--bl
   <script>
     var _navToken = 0;
 
-    // Capturador global: qualquer exceção JS vira um toast com a mensagem REAL
+    // Capturador global: qualquer exceção JS vira um toast PERSISTENTE com a
+    // localização completa (arquivo:linha:coluna) — toque no toast para fechar.
     window.addEventListener('error', function(e){
-      try { mostrarToast('Erro no app: ' + (e.message || 'desconhecido') + (e.lineno ? ' (linha ' + e.lineno + ')' : ''), 'erro'); } catch (x) {}
+      try {
+        var src = e.filename ? e.filename.split('/').pop().split('?')[0] : 'inline';
+        var st = (e.error && e.error.stack) ? ' · ' + String(e.error.stack).split('\n')[0].slice(0, 120) : '';
+        mostrarToast('Erro no app: ' + (e.message || 'desconhecido') + ' — ' + src + ':' + (e.lineno || '?') + ':' + (e.colno || '?') + st, 'erro', true);
+      } catch (x) {}
     });
     window.addEventListener('unhandledrejection', function(e){
-      try { mostrarToast('Erro assíncrono: ' + (e.reason && e.reason.message ? e.reason.message : e.reason), 'erro'); } catch (x) {}
+      try {
+        var r = e.reason || {};
+        var st = r.stack ? ' · ' + String(r.stack).split('\n')[0].slice(0, 120) : '';
+        mostrarToast('Erro assíncrono: ' + (r.message || r) + st, 'erro', true);
+      } catch (x) {}
     });
 
     function navegarPara(nomePagina) {
@@ -509,16 +522,20 @@ tr.row-total td { background: var(--blue-100); font-weight: 700; color: var(--bl
       document.body.classList.toggle('sidebar-aberta', aberta);
     }
 
-    // Toast global reutilizável pelas páginas
-    function mostrarToast(mensagem, tipo) {
+    // Toast global reutilizável pelas páginas.
+    // persistente=true: fica na tela (até 60s) e fecha ao TOQUE — usado pelos erros,
+    // para dar tempo de ler/printar a localização no celular.
+    function mostrarToast(mensagem, tipo, persistente) {
       tipo = tipo || 'sucesso';
       var c = document.getElementById('toast-container');
       var t = document.createElement('div');
       t.className = 'toast ' + tipo;
       var icone = tipo === 'erro' ? 'fa-circle-xmark' : (tipo === 'aviso' ? 'fa-triangle-exclamation' : 'fa-circle-check');
-      t.innerHTML = '<i class="fas ' + icone + '"></i><span>' + mensagem + '</span>';
+      t.innerHTML = '<i class="fas ' + icone + '"></i><span>' + mensagem + '</span>' + (persistente ? '<span style="margin-left:auto;opacity:.55;font-size:.85em">toque p/ fechar</span>' : '');
+      t.style.cursor = 'pointer';
+      t.onclick = function(){ t.remove(); };
       c.appendChild(t);
-      setTimeout(function(){ t.remove(); }, 4000);
+      setTimeout(function(){ t.remove(); }, persistente ? 60000 : 4000);
     }
 
     // carga inicial

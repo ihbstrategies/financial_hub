@@ -441,7 +441,7 @@ tr.row-total td { background: var(--blue-100); font-weight: 700; color: var(--bl
       <div class="sidebar-brand"><i class="fas fa-wallet"></i> M&M Financeiro</div>
       <nav class="sidebar-nav" id="nav">
         <div class="nav-item ativo" data-pagina="Dashboard" onclick="navegarPara('Dashboard')"><i class="fas fa-chart-pie"></i> Dashboard</div>
-        <div class="nav-item" data-pagina="FinanceiroTributos" onclick="navegarPara('FinanceiroTributos')"><i class="fas fa-building-columns"></i> Financeiro e Tributos</div>
+        <div class="nav-item" data-pagina="FinanceiroTributos" onclick="navegarPara('FinanceiroTributos')"><i class="fas fa-building-columns"></i> M&amp;M</div>
         <div class="nav-item" data-pagina="Lancamentos" onclick="navegarPara('Lancamentos')"><i class="fas fa-receipt"></i> Pessoal</div>
         <div class="nav-item" data-pagina="Gestao" onclick="navegarPara('Gestao')"><i class="fas fa-sliders-h"></i> Gestão</div>
         <div class="nav-item disabled" title="Em breve — será integrado ao sistema"><i class="fas fa-chart-line"></i> Investimentos <span class="nav-badge">em breve</span></div>
@@ -449,7 +449,7 @@ tr.row-total td { background: var(--blue-100); font-weight: 700; color: var(--bl
       <div class="sidebar-footer">
         <div class="nome">Financial Hub</div>
         <div></div>
-        <div style="opacity:.55;font-size:.78em;margin-top:4px">build 2026-07-13.i</div>
+        <div style="opacity:.55;font-size:.78em;margin-top:4px">build 2026-07-13.j</div>
       </div>
     </aside>
 
@@ -488,7 +488,8 @@ tr.row-total td { background: var(--blue-100); font-weight: 700; color: var(--bl
       for (var i = 0; i < itens.length; i++) {
         itens[i].classList.toggle('ativo', itens[i].getAttribute('data-pagina') === nomePagina);
       }
-      document.getElementById('titulo-mobile').textContent = nomePagina;
+      var _navAtivo = document.querySelector('.nav-item[data-pagina="' + nomePagina + '"]');
+      document.getElementById('titulo-mobile').textContent = _navAtivo ? _navAtivo.textContent.trim() : nomePagina;
       toggleSidebar(false);
 
       var alvo = document.getElementById('conteudo');
